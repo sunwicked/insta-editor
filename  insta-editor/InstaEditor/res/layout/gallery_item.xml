@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/galItemRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/button_blue" >
+    <ImageView
+        android:id="@+id/gImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:tag="1"
+        android:padding="0dp"
+        android:src="@drawable/sunflower_normal" />
+	<TextView 
+	    android:id="@+id/gText"
+	    android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:text="Saturation"
+        android:textColor="#ffffff"
+        android:textSize="10sp"/>
+</FrameLayout>
