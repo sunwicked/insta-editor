@@ -24,7 +24,7 @@ public class SampleView extends ImageView
     private Paint mPaint;
     private Paint mPaint2;
 
-    private Bitmap mBitmap,tempBmp;
+    private Bitmap mBitmap, copyBmp;
     ColorMatrix cm,ocm,adjMat, effMat;
     ColorMatrixColorFilter cmf,ocmf;
     boolean old = false;
@@ -456,7 +456,7 @@ public class SampleView extends ImageView
     public void setImageBitmap (Bitmap bmp)
     {
         mBitmap = bmp;
-        tempBmp = Bitmap.createBitmap(mBitmap.getWidth(), mBitmap.getHeight(), mBitmap.getConfig());
+        //tempBmp = Bitmap.createBitmap(mBitmap.getWidth(), mBitmap.getHeight(), mBitmap.getConfig());
         //mCanvas = new Canvas(mBitmap);
         super.setImageBitmap(bmp);
     }
@@ -464,6 +464,11 @@ public class SampleView extends ImageView
     public Bitmap getBitmap()
     {
         return mBitmap;
+    }
+    
+    public void onUndo()
+    {
+        
     }
     
     public void saveBitmap(String path)
@@ -495,10 +500,9 @@ public class SampleView extends ImageView
             try
             {
                 FileOutputStream fout = new FileOutputStream(path);
-
                 getDrawingCache().compress(CompressFormat.JPEG, 100, fout);
-                fout = new FileOutputStream("/mnt/sdcard/myPic.jpg");
-                tempBmp.compress(CompressFormat.JPEG, 100, fout);
+                /*fout = new FileOutputStream("/mnt/sdcard/myPic.jpg");
+                tempBmp.compress(CompressFormat.JPEG, 100, fout);*/
             } catch (FileNotFoundException e)
             {
                 e.printStackTrace();
