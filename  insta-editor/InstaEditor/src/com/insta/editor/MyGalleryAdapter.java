@@ -53,6 +53,16 @@ public class MyGalleryAdapter extends BaseAdapter{
             R.drawable.sunflower_grain
     };
 
+    Integer[] mTextureIds =
+    {
+            R.drawable.sunflower_sat,
+            R.drawable.sunflower_cont,
+            R.drawable.sunflower_bright,
+            R.drawable.sunflower_hot,
+            R.drawable.sunflower_cold,
+            R.drawable.more
+    };
+    
     String[] mEffectsTxt = 
     {
             "BGR", "Sepia", "Invert", "Polaroid",
@@ -83,8 +93,10 @@ public class MyGalleryAdapter extends BaseAdapter{
     {
         if(transform == Transformation.Effects)
             return mImageIdsEffects.length;
-        else
+        else if(transform == Transformation.Adjustments)
             return mImageIdsAdjustments.length;
+        else
+            return mTextureIds.length;
     }
 
     @Override
@@ -92,8 +104,10 @@ public class MyGalleryAdapter extends BaseAdapter{
     {
         if(transform == Transformation.Effects)
             return mImageIdsEffects[position];
-        else
+        else if(transform == Transformation.Adjustments)
             return mImageIdsAdjustments[position];
+        else
+            return mTextureIds[position];
     }
 
     @Override
@@ -124,10 +138,13 @@ public class MyGalleryAdapter extends BaseAdapter{
         if(transform == Transformation.Effects) { 
             holder.image.setImageResource(mImageIdsEffects[position]);
             holder.txt.setText(mEffectsTxt[position]);
-        }else{
+        }else if(transform == Transformation.Adjustments){
             holder.image.setImageResource(mImageIdsAdjustments[position]);
             holder.txt.setText(mAdjTxt[position]);
+        }else {
+            holder.image.setImageResource(mTextureIds[position]);
         }
+        
         if(EditActivity.selected == position)
         {
             //holder.rel.setBackgroundResource(R.drawable.selection_back);

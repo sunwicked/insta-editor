@@ -5,19 +5,23 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Paint.Style;
+import android.graphics.PorterDuff.Mode;
 import android.graphics.Shader.TileMode;
+import android.graphics.Xfermode;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.Shape;
 import android.net.Uri;
@@ -52,6 +56,7 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
     public static int offsetW;
     public static int offsetH;
     public static int selected = -1;
+    public int currentGalItem = 0;
 
     private String path;
     //new file path for gallery saved image
@@ -70,40 +75,74 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
 
     int[] colorsHue =
     {
-        0xFFFF0000,
-        0XFFFF00FF,
-        0XFF0000FF,
-        0XFF00FFFF,
-        0XFF00FF00,
-        0XFFFFFF00,
-        0xFFFF0000
+            0xFFFF0000,
+            0XFFFF00FF,
+            0XFF0000FF,
+            0XFF00FFFF,
+            0XFF00FF00,
+            0XFFFFFF00,
+            0xFFFF0000
     };
-    
+
     int[] colorsSat = 
     {
             0xFFAEAEAE,
             0xFFFFFF00,
             0xFFFFA500   
     };
-    
+
     int[] colorsBright = 
     {
-         0xFF000000,
-         0xFFFCFCFC,
-         0xFFFFFFFF
+            0xFF000000,
+            0xFFFCFCFC,
+            0xFFFFFFFF
     };
-    
+
     int[] colorsContrast = 
     {
-        0xFFFFFFFF,
-        0xFFAEAEAE,
-        0xFF000000
+            0xFFFFFFFF,
+            0xFFAEAEAE,
+            0xFF000000
     };
-    
+
+
     float unit = 255/40;
-    
+
     int satProg = 100, contProg, brightProg;
-    
+
+    int[] textureIds = 
+    {
+            R.drawable.circles1,
+            R.drawable.blaze1,
+            R.drawable.bricks1,
+            R.drawable.tropical_forest1,
+            R.drawable.blue_grid1
+    };
+
+    Mode[] porterDuffmodes =
+    {
+            Mode.LIGHTEN,
+            Mode.DARKEN,
+            Mode.SCREEN,
+            Mode.MULTIPLY
+    };
+
+    enum resLocation
+    {
+        EXTERNAL,
+        LOCAL
+    };
+
+    int porterDuffIndex = 0;
+    Canvas mCanvas = new Canvas();
+    Paint paint = new Paint();
+    Bitmap bmp, bmpOverlay;
+
+    /*effect control bar*/
+    RelativeLayout blendControl;
+    /*blend control bar*/
+    RelativeLayout effectControl;
+
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
@@ -144,19 +183,19 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
 
         ShapeDrawable sd = new ShapeDrawable();
         sd.setShape(new Shape() {
-            
+
             @Override
             public void draw (Canvas canvas, Paint paint)
             {
-               /* int x1 = (int) satSeekControl.getLeft();
+                /* int x1 = (int) satSeekControl.getLeft();
                 int y1 = (int) satSeekControl.getTop();
-                
+
                 int x2 = satSeekControl.getRight();
                 int y2 = satSeekControl.getBottom();*/
-                
+
                 paint.setStyle(Style.FILL_AND_STROKE);
                 paint.setStrokeWidth(40);
-                
+
                 if(seekId == seekIdEnum.saturation)
                 {
                     paint.setShader(new LinearGradient(0,40, satSeekCont.getWidth(),
@@ -175,11 +214,11 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
                             40, colorsBright, null, TileMode.CLAMP));
                     canvas.drawLine(0,-15, brightSeekCont.getWidth(),-15, paint);
                 }
-                
-                
+
+
             }
         });
-        
+
         satSeekCont.setProgressDrawable(sd);
         contSeekCont.setProgressDrawable(sd);
         brightSeekCont.setProgressDrawable(sd);
@@ -213,18 +252,18 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
                 contSeekCont.setVisibility(View.GONE);
                 brightSeekCont.setVisibility(View.GONE);
                 satSeekCont.setVisibility(View.VISIBLE);
-                
+
                 satSeekCont.setProgress(satProg);
                 satSeekCont.setMax(400);
                 //seekControl.incrementProgressBy(satProg);
-                
+
                 //satSeekCont.invalidate();
                 break;
             case contrast:
                 brightSeekCont.setVisibility(View.GONE);
                 satSeekCont.setVisibility(View.GONE);
                 contSeekCont.setVisibility(View.VISIBLE);
-                
+
                 contSeekCont.setProgress(contProg);
                 contSeekCont.setMax(50);
                 //seekControl.incrementProgressBy(contProg);
@@ -234,11 +273,11 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
                 contSeekCont.setVisibility(View.GONE);
                 satSeekCont.setVisibility(View.GONE);
                 brightSeekCont.setVisibility(View.VISIBLE);
-                
+
                 brightSeekCont.setProgress(brightProg);
                 brightSeekCont.setMax(100);
                 //seekControl.incrementProgressBy(brightProg);
-                
+
                 break;
         }
 
@@ -291,8 +330,19 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
         selected = position;
         //view.findViewById(R.id.galItemRoot).setBackgroundResource(R.drawable.selection_back);
         mAdapter.notifyDataSetChanged();
+        //recycling bitmaps
+
         if(transform == Transformation.Effects)
         {
+            if(bmp != null) {
+                bmp.recycle();
+                bmp = null;
+            }
+            if(bmpOverlay != null) {
+                bmpOverlay.recycle();
+                bmpOverlay = null;
+            }
+
             switch(position)
             {
                 case 0:
@@ -332,8 +382,17 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
                     break;
             }
         }
-        else
+        else if(transform == Transformation.Adjustments)
         {
+            if(bmp != null) {
+                bmp.recycle();
+                bmp = null;
+            }
+            if(bmpOverlay != null) {
+                bmpOverlay.recycle();
+                bmpOverlay = null;
+            }
+
             Integer rId = (Integer) mAdapter.getItem(position);
             switch(position)
             {
@@ -363,7 +422,110 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
                     break;
             }
         }
+        else
+        {
+            switch(position)
+            {
+                case 0:
+                    if(blendControl.getVisibility() == View.GONE)
+                    {
+                        effectControl.setVisibility(View.GONE);
+                        blendControl.setVisibility(View.VISIBLE);
+                    }
+                    currentGalItem = position;
+                    porterDuffIndex = 0;
+                    
+                    bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                    bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[position]);
+                    porterDuffModeAndroid();
+                    break;
+                case 1:
+                    if(blendControl.getVisibility() == View.GONE)
+                    {
+                        effectControl.setVisibility(View.GONE);
+                        blendControl.setVisibility(View.VISIBLE);
+                    }
+                    currentGalItem = position;
+                    porterDuffIndex = 0;
+                    
+                    bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                    bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[position]);
+                    porterDuffModeAndroid();
+                    break;
+                case 2:
+                    if(blendControl.getVisibility() == View.GONE)
+                    {
+                        effectControl.setVisibility(View.GONE);
+                        blendControl.setVisibility(View.VISIBLE);
+                    }
+                    currentGalItem = position;
+                    porterDuffIndex = 0;
+                    
+                    bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                    bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[position]);
+                    porterDuffModeAndroid();
+                    break;
+                case 3:
+                    if(blendControl.getVisibility() == View.GONE)
+                    {
+                        effectControl.setVisibility(View.GONE);
+                        blendControl.setVisibility(View.VISIBLE);
+                    }
+                    currentGalItem = position;
+                    porterDuffIndex = 0;
+                    
+                    bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                    bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[position]);
+                    porterDuffModeAndroid();
+                    break;
+                case 4:
+                    if(blendControl.getVisibility() == View.GONE)
+                    {
+                        effectControl.setVisibility(View.GONE);
+                        blendControl.setVisibility(View.VISIBLE);
+                    }
+                    currentGalItem = position;
+                    porterDuffIndex = 0;
+                    
+                    bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                    bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[position]);
+                    porterDuffModeAndroid();
+                    break;
+                case 5:
+                    //More
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    break;
+                case 8:
+                    break;
+                case 9:
+                    break;
+                case 10:
+                    //MORE ITEMS
+                    break;
+            }
 
+            /*paint.setXfermode(new PorterDuffXfermode(porterDuffmodes[porterDuffIndex]));
+            mCanvas = new Canvas();*/
+
+            //bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+
+
+            /*mCanvas.setBitmap(bmp);
+            mCanvas.drawBitmap(bmpOverlay, 0, 0, paint);
+
+            mainImage.setImageBitmap(bmp);*/
+
+            //new PorterDuffAsyncTask(EditActivity.this, bmp, bmpOverlay, PorterDuffMode.ADD).execute();
+        }
+
+    }
+
+    public void setOverlayBitmap(Bitmap overlayBmp)
+    {
+        mainImage.setImageBitmap(overlayBmp);
     }
 
     /*************************************************************/
@@ -378,11 +540,9 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
      */
     public void onRevert(View v)
     {
-        mainImage.setNormal();
-        selected = -1;
-        mAdapter.notifyDataSetChanged();
+        //extracting the image from the path above
+        new ExtractBitmap(path).execute();
     }
-
 
     /**
      * 
@@ -492,17 +652,133 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
 
     }
 
+
+    private void porterDuffModeAndroid()
+    {
+        paint.setXfermode(new PorterDuffXfermode(porterDuffmodes[porterDuffIndex]));
+        mCanvas = new Canvas();
+        bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+        mCanvas.setBitmap(bmp);
+        mCanvas.drawBitmap(bmpOverlay, 0, 0, paint);
+        mainImage.setImageBitmap(bmp);
+    }
+
+    private void porterDuffModeCustom(PorterDuffMode mode)
+    {
+        new PorterDuffAsyncTask(EditActivity.this, bmp, bmpOverlay, mode).execute();
+    }
+
+    public void onBlend(View v)
+    {
+        switch(v.getId())
+        {
+            case R.id.lightenMode:
+                /*Lighten*/
+                porterDuffIndex = 0;
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                porterDuffModeAndroid();
+                break;
+            case R.id.darkenMode:
+                /*Darken*/
+                porterDuffIndex = 1;
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                porterDuffModeAndroid();
+                break;
+            case R.id.screenMode:
+                /*Screen*/
+                porterDuffIndex = 2;
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                porterDuffModeAndroid();
+                break;
+            case R.id.multiplyMode:
+                /*Multiply*/
+                porterDuffIndex = 3;
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                porterDuffModeAndroid();
+                break;
+            case R.id.overlayMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.OVERLAY);
+                break;
+            case R.id.addMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.ADD);
+                break;
+            case R.id.dodgeMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.DODGE);
+                break;
+            case R.id.burnMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.BURN);
+                break;
+            case R.id.hardlightMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.HARDLIGHT);
+                break;
+            case R.id.differenceMode:
+                bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+                //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[currentGalItem]);
+                porterDuffModeCustom(PorterDuffMode.DIFFERENCE);
+                break;
+        }
+    }
+
+    class PorterDuffAsyncTask extends AsyncTask<Void, Void, Void>
+    {
+        ProgressDialog pd;
+        Context context;
+        Bitmap srcBmp, destBmp;
+        MyPorterDuffMode mPorter;
+        PorterDuffMode mode;
+
+        public PorterDuffAsyncTask (Context context, Bitmap srcBmp, Bitmap destBmp, PorterDuffMode mode)
+        {
+            this.context = context;
+            this.srcBmp = srcBmp;
+            this.destBmp = destBmp;
+            this.mode = mode;
+            mPorter = new MyPorterDuffMode();
+        }
+
+        @Override
+        protected void onPreExecute ( )
+        {
+            pd = new ProgressDialog(context);
+            pd.show();
+        }
+
+        @Override
+        protected Void doInBackground (Void... params)
+        {
+            srcBmp = mPorter.applyOverlayMode(srcBmp, destBmp, mode);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute (Void result)
+        {
+            mainImage.setImageBitmap(srcBmp);
+            pd.dismiss();
+        }
+    }
+
     class ApplyFilter extends AsyncTask<Void, Void, Void>
     {
         ProgressDialog pd;
         Bitmap grainBmp;
         int amount;
-        
+
         public ApplyFilter(int amount)
         {
             this.amount = amount;
         }
-        
+
         @Override
         protected void onPreExecute ( )
         {
@@ -555,7 +831,7 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
         @Override
         protected Void doInBackground (Void... arg0)
         {
-            bmp = extractBitmap(pathToFile);
+            bmp = extractBitmap(pathToFile, resLocation.EXTERNAL, -999);
             return null;
         }
 
@@ -568,7 +844,12 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
             offsetH = (MAX_HEIGHT - 20)- bmp.getHeight();
             offsetH /= 2;
 
-            mainImage.setImageBitmap(bmp);  
+            mainImage.setImageBitmap(bmp);
+
+            mainImage.setNormal();
+            selected = -1;
+            mAdapter.notifyDataSetChanged();
+
             pd.dismiss();
             //bmp.recycle();
             //bmp = null;
@@ -576,11 +857,21 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
 
     }
 
-    public Bitmap extractBitmap(String pathToFile)
+    public Bitmap extractBitmap(String pathToFile, resLocation loc, int resID)
     {
         BitmapFactory.Options boundsOp = new BitmapFactory.Options();
         boundsOp.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(pathToFile, boundsOp);
+        boundsOp.inPreferredConfig = Config.ARGB_8888;
+        Bitmap bmp = null;
+
+        if(loc == resLocation.EXTERNAL)
+        {
+            BitmapFactory.decodeFile(pathToFile, boundsOp);
+        }
+        else if(loc == resLocation.LOCAL)
+        {
+            BitmapFactory.decodeResource(getResources(), resID, boundsOp);
+        }
 
         if(boundsOp.outWidth == -1) 
         {
@@ -601,8 +892,17 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
 
         BitmapFactory.Options resample = new BitmapFactory.Options();
         resample.inSampleSize = inSampleSize;
+        resample.inPreferredConfig = Config.ARGB_8888;
 
-        Bitmap bmp = BitmapFactory.decodeFile(pathToFile, resample);
+        if(loc == resLocation.EXTERNAL)
+        {
+            bmp = BitmapFactory.decodeFile(pathToFile, resample);
+        }
+        else if(loc == resLocation.LOCAL)
+        {
+            bmp = BitmapFactory.decodeResource(getResources(), resID, resample);
+        }
+
         bmp = Bitmap.createScaledBitmap(bmp, MAX_WIDTH, MAX_HEIGHT, true);
 
         return bmp;
@@ -612,13 +912,26 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
     {
         /*if(transform != Transformation.Effects)
         {*/
-            selected = -1;
-            transform = Transformation.Effects;
-            mGallery.setVisibility(View.VISIBLE);
-            seekRel.setVisibility(View.GONE);
-            mAdapter = new MyGalleryAdapter(this, transform);
-            mGallery.setAdapter(mAdapter);
-            mGallery.setSelection(1);
+        if(bmp != null)
+        {
+            bmp.recycle();
+            bmp = null;
+            System.gc();
+        }
+        if(bmpOverlay != null)
+        {
+            bmpOverlay.recycle();
+            bmpOverlay = null;
+            System.gc();
+        }
+
+        selected = -1;
+        transform = Transformation.Effects;
+        mGallery.setVisibility(View.VISIBLE);
+        seekRel.setVisibility(View.GONE);
+        mAdapter = new MyGalleryAdapter(this, transform);
+        mGallery.setAdapter(mAdapter);
+        mGallery.setSelection(1);
         //}
     }
 
@@ -626,14 +939,67 @@ public class EditActivity extends Activity implements OnItemClickListener, OnSee
     {
         /*if(transform != Transformation.Adjustments)
         {*/
-            selected = -1;
-            transform = Transformation.Adjustments;
-            mGallery.setVisibility(View.VISIBLE);
-            seekRel.setVisibility(View.GONE);
-            mAdapter = new MyGalleryAdapter(this, transform);
-            mGallery.setAdapter(mAdapter);
-            mGallery.setSelection(1);
+        if(bmp != null)
+        {
+            bmp.recycle();
+            bmp = null;
+            System.gc();
+        }
+        if(bmpOverlay != null)
+        {
+            bmpOverlay.recycle();
+            bmpOverlay = null;
+            System.gc();
+        }
+
+        selected = -1;
+        transform = Transformation.Adjustments;
+        mGallery.setVisibility(View.VISIBLE);
+        seekRel.setVisibility(View.GONE);
+        mAdapter = new MyGalleryAdapter(this, transform);
+        mGallery.setAdapter(mAdapter);
+        mGallery.setSelection(1);
         //}
+}
+
+    public void applyTexture(View v)
+    {
+        //foreground bitmap
+        //bmp = extractBitmap(path, resLocation.EXTERNAL, -999);
+
+        selected = -1;
+        transform = Transformation.Textures;
+        mGallery.setVisibility(View.VISIBLE);
+        seekRel.setVisibility(View.GONE);
+        mAdapter = new MyGalleryAdapter(this, transform);
+        mGallery.setAdapter(mAdapter);
+        mGallery.setSelection(1);
+
+        blendControl  = (RelativeLayout)findViewById(R.id.blendControl);
+        effectControl = (RelativeLayout)findViewById(R.id.effectsControl);
+
+        //bmpOverlay = extractBitmap(" ", resLocation.LOCAL, textureIds[0]);
+    }
+
+    public void onCloseModes(View v)
+    {
+        RelativeLayout blendControl  = (RelativeLayout)findViewById(R.id.blendControl);
+        RelativeLayout effectControl = (RelativeLayout)findViewById(R.id.effectsControl);
+
+        blendControl.setVisibility(View.GONE);
+        effectControl.setVisibility(View.VISIBLE);
+        if(bmp != null)
+        {
+            bmp.recycle();
+            bmp = null;
+            System.gc();
+        }
+        if(bmpOverlay != null)
+        {
+            bmpOverlay.recycle();
+            bmpOverlay = null;
+            System.gc();
+        }
     }
 
     public void onUndo(View v)

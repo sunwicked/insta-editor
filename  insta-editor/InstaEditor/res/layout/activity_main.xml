@@ -117,37 +117,37 @@
             android:id="@+id/satSeekCont"
             android:layout_width="fill_parent"
             android:layout_height="70dp"
+            android:layout_centerVertical="true"
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
-            android:layout_centerVertical="true"
             android:layout_toRightOf="@id/effectImage"
             android:paddingLeft="0dp"
             android:paddingRight="0dp"
             android:thumb="@drawable/marker1"
             android:thumbOffset="15dp"
             android:visibility="gone" />
-        
+
         <SeekBar
             android:id="@+id/contSeekCont"
             android:layout_width="fill_parent"
             android:layout_height="70dp"
+            android:layout_centerVertical="true"
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
-            android:layout_centerVertical="true"
             android:layout_toRightOf="@id/effectImage"
             android:paddingLeft="0dp"
             android:paddingRight="0dp"
             android:thumb="@drawable/marker1"
             android:thumbOffset="15dp"
             android:visibility="gone" />
-        
+
         <SeekBar
             android:id="@+id/brightSeekCont"
             android:layout_width="fill_parent"
             android:layout_height="70dp"
+            android:layout_centerVertical="true"
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
-            android:layout_centerVertical="true"
             android:layout_toRightOf="@id/effectImage"
             android:paddingLeft="0dp"
             android:paddingRight="0dp"
@@ -163,7 +163,7 @@
         android:layout_weight="0.2"
         android:background="@drawable/gradient_blue"
         android:paddingLeft="10dp"
-        android:paddingRight="10dp" >
+        android:paddingRight="10dp">
 
         <Button
             android:id="@+id/effectsBtn"
@@ -190,6 +190,175 @@
             android:layout_centerVertical="true"
             android:background="@drawable/ic_device_access_brightness_medium"
             android:onClick="onAdjust" />
+
+        <Button
+            android:id="@+id/button1"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/effectsBtn"
+            android:layout_marginRight="41dp"
+            android:layout_toLeftOf="@+id/undoBtn"
+            android:onClick="applyTexture"
+            android:text="Texture" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/blendControl"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.2"
+        android:background="@drawable/gradient_blue"
+        android:paddingBottom="5dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="5dp"
+        android:visibility="gone" >
+
+        <Button
+            android:id="@+id/closeModeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/ic_content_remove"
+            android:onClick="onCloseModes" />
+
+        <View
+            android:id="@+id/separator"
+            android:layout_width="1dp"
+            android:layout_height="fill_parent"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_toRightOf="@id/closeModeBtn"
+            android:background="#ffffff" />
+
+        <HorizontalScrollView
+            android:id="@+id/modes"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_toRightOf="@id/separator"
+            android:fillViewport="true"
+            android:scrollbars="none" >
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center_vertical" >
+
+                <Button
+                    android:id="@+id/lightenMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Lighten"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/darkenMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Darken"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/screenMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Screen"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/multiplyMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Multiply"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/overlayMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Overlay"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/addMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Add"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/dodgeMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Dodge"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/burnMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Burn"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/hardlightMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="HardLight"
+                    android:onClick="onBlend"/>
+                
+                <Button
+                    android:id="@+id/differenceMode"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/modes_back"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp"
+                    android:text="Difference"
+                    android:onClick="onBlend"/>
+            </LinearLayout>
+        </HorizontalScrollView>
+        
     </RelativeLayout>
 
 </LinearLayout>
